@@ -8,25 +8,15 @@
 --     absence of ranking of any candidate is allowed, and is indicated by 0.
 
 -- Output:
---   * List of candidates and the votes received, sorted in descending order
---     of vote count.
+--   * Winning candidate and the votes received.
 
 import Data.Function (on)
 import Data.List (minimumBy, maximumBy)
 
-type Candidate = Char
+type Candidate = String
 type Rank      = Int
 type CandRank  = (Candidate, Rank)
 type Ballot    = [CandRank]
-
--- count (1st-ranked) votes for each candidate
--- and return the list of vote-counts
-
-roundResult :: [Ballot] -> [(Candidate, Rank)]
-roundResult ballots =
-  let accumulateVotes (c, v1) (_, v2) = (c, v1 + v2)
-      firstRankOrBust blt = map (\(c, r) -> if r == 1 then (c, 1) else (c, 0)) blt
-  in foldl1 (zipWith (accumulateVotes)) $ map (firstRankOrBust) ballots
 
 -- find if there is a winner (by simple majority)
 doWeHaveAWinner :: [(Candidate, Rank)] -> Bool
@@ -35,13 +25,13 @@ doWeHaveAWinner votes =
       maxVotes = maximum $ map (snd) votes
   in totalVotes < 2 * maxVotes
 
--- least vote-getter to be eliminated
-roundLoser :: [(Candidate, Int)] -> Candidate
-roundLoser votes = fst $ minimumBy (compare `on` snd) votes
+-- candidate with least votes
+roundLoser :: [(Candidate, Int)] -> (Candidate, Int)
+roundLoser votes = minimumBy (compare `on` snd) votes
 
--- most vote-getter to gain loser's votes
-roundWinner :: [(Candidate, Int)] -> Candidate
-roundWinner votes = fst $ maximumBy (compare `on` snd) votes
+-- candidate with most votes
+roundWinner :: [(Candidate, Int)] -> (Candidate, Int)
+roundWinner votes = maximumBy (compare `on` snd) votes
 
 -- reassign votes of a candidate to all others
 -- the resulting ballot will have one less candidate
@@ -54,23 +44,31 @@ reassignVotes loser ballots =
   in
     map (\b -> reassign loser b) ballots
 
--- run as many rounds of counting until a winner is found
+-- count (1st-ranked) votes for each candidate
+-- and return the list of (candidate, vote-count) pairs
 
-winner :: [Ballot] -> [(Candidate, Int)]
-winner ballots =
+roundResult :: [Ballot] -> [(Candidate, Int)]
+roundResult ballots =
+  let accumulateVotes (c, v1) (_, v2) = (c, v1 + v2)
+      firstRankOrBust blt = map (\(c, r) -> (c, if r == 1 then 1 else 0)) blt
+  in foldl1 (zipWith (accumulateVotes)) $ map (firstRankOrBust) ballots
+
+-- count votes until a winner is found
+
+tally :: [Ballot] -> [(Candidate, Int)]
+tally ballots =
   let result = roundResult ballots
   in
     if doWeHaveAWinner result
     then
       result
     else
-      winner $ reassignVotes (roundLoser result) ballots
+      tally $ reassignVotes (fst $ roundLoser result) ballots
 
 main = do
-  let ballots = [[('A', 1), ('B', 3), ('C', 2)],
-                 [('A', 2), ('B', 1), ('C', 3)],
-                 [('A', 3), ('B', 2), ('C', 1)],
-                 [('A', 1), ('B', 3), ('C', 2)],
-                 [('A', 2), ('B', 1), ('C', 3)]
-                 ]
-  print $ winner ballots
+  let ballots = [[("A", 1), ("B", 3), ("C", 2)],
+                 [("A", 2), ("B", 1), ("C", 3)],
+                 [("A", 3), ("B", 2), ("C", 1)],
+                 [("A", 1), ("B", 3), ("C", 2)],
+                 [("A", 2), ("B", 1), ("C", 3)]]
+  print $ roundWinner $ tally ballots
