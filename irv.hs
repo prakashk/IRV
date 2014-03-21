@@ -65,10 +65,14 @@ tally ballots =
     else
       tally $ reassignVotes (fst $ roundLoser result) ballots
 
+-- winner of the vote
+winner :: [Ballot] -> (Candidate, Int)
+winner = roundWinner . tally
+
 main = do
   let ballots = [[("A", 1), ("B", 3), ("C", 2)],
                  [("A", 2), ("B", 1), ("C", 3)],
                  [("A", 3), ("B", 2), ("C", 1)],
                  [("A", 1), ("B", 3), ("C", 2)],
                  [("A", 2), ("B", 1), ("C", 3)]]
-  print $ roundWinner $ tally ballots
+  print $ winner ballots
