@@ -2,7 +2,6 @@
 -- http://en.wikipedia.org/wiki/IRV
 
 -- Inputs:
---   * Number of candidates
 --   * List of ballots
 --     - Each ballot is a list of candidates in order of preference (from most to least)
 --       by each voter; absence of ranking of any candidate is allowed.
@@ -64,6 +63,7 @@ tally ballots =
 winner :: [Ballot] -> (Candidate, Integer)
 winner = roundWinner . tally
 
+main :: IO ()
 main = do
   let ballots = [["A", "B", "C"],
                  ["B", "A", "C"],
